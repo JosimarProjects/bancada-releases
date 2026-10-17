@@ -56,7 +56,33 @@ async function main() {
   render(JSON.parse(text));
 }
 
+function listBlock(title, items) {
+  const d = document.createElement('div'); d.className = 'msg';
+  const w = document.createElement('div'); w.className = 'who'; w.textContent = title; d.append(w);
+  d.append(document.createTextNode(items.length ? items.join('\n') : '(nenhum)')); out.append(d);
+}
+
 function render(bundle) {
+  if (bundle.bancadaConfig) {
+    document.getElementById('title').textContent = 'Configuração do Claude Code';
+    document.getElementById('meta').textContent = `de ${bundle.source?.label ?? '?'} · ${new Date(bundle.createdAt).toLocaleString('pt-BR')}${bundle.secretsIncluded ? ' · contém senhas' : ' · sem senhas'}`;
+    out.innerHTML = '';
+    const skills = [...new Set(bundle.files.filter((f) => f.area === 'skills').map((f) => f.path.split('/')[1]))];
+    listBlock('Servidores MCP', Object.keys(bundle.mcpServers));
+    listBlock('Skills', skills);
+    listBlock('Outros', bundle.files.filter((f) => f.area !== 'skills').map((f) => f.path));
+    const tip = document.createElement('div'); tip.className = 'state'; tip.textContent = 'Para aplicar: Bancada IA → MCPs e Skills → Nuvem e compartilhar → Importar configuração (cole este link). A Bancada adapta ao seu sistema.'; out.append(tip);
+    return;
+  }
+  if (bundle.bancadaWorkspace) {
+    document.getElementById('title').textContent = `Workspace: ${bundle.workspace.name}`;
+    document.getElementById('meta').textContent = `${bundle.sessions.length} sessão(ões) · ${bundle.boards.length} quadro(s) · ${new Date(bundle.createdAt).toLocaleString('pt-BR')}`;
+    out.innerHTML = '';
+    listBlock('Sessões', bundle.sessions.map((s) => `${s.name || s.title}  —  ${s.cwd ?? ''}`));
+    listBlock('Quadros do kanban', bundle.boards.map((b) => b.name));
+    const tip = document.createElement('div'); tip.className = 'state'; tip.textContent = 'Para importar: Bancada IA → Nuvem → Importar workspace por link (cole este link).'; out.append(tip);
+    return;
+  }
   const s = bundle.sessions[0];
   document.getElementById('title').textContent = s.name || s.title || 'Sessão';
   document.getElementById('meta').textContent = `exportada em ${new Date(bundle.exportedAt).toLocaleString('pt-BR')}`;
