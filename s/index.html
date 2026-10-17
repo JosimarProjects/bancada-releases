@@ -1,1 +1,85 @@
-<!doctype html><meta charset="utf-8"><title>Bancada IA</title><p>Página publicada na primeira release.</p>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://iqfuiabrnucvcochpggz.supabase.co; img-src data:">
+<title>Sessão compartilhada · Bancada IA</title>
+<style>
+  :root { --bg:#f7f7f5; --panel:#fff; --line:#e4e4e0; --ink:#1d1d1b; --mute:#6b6b66; --accent:#2f6f4f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141413; --panel:#1c1c1a; --line:#2e2e2b; --ink:#ecece8; --mute:#9a9a93; --accent:#6fbf8f; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { position:sticky; top:0; background:var(--panel); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header b { font-size:15px; }
+  header .meta { color:var(--mute); font-size:12px; }
+  a.btn { margin-left:auto; background:var(--accent); color:#fff; text-decoration:none; padding:7px 12px; border-radius:6px; font-weight:600; font-size:13px; }
+  main { max-width:900px; margin:0 auto; padding:16px; }
+  .msg { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin:10px 0; white-space:pre-wrap; word-break:break-word; }
+  .msg .who { font-size:12px; font-weight:700; color:var(--mute); margin-bottom:4px; }
+  .tool { color:var(--mute); font:12px/1.5 ui-monospace, Menlo, monospace; padding:2px 14px; white-space:pre-wrap; word-break:break-word; }
+  .state { color:var(--mute); text-align:center; padding:60px 16px; }
+</style>
+</head>
+<body>
+<header><b id="title">Sessão compartilhada</b><span class="meta" id="meta"></span><a class="btn" id="open" href="#" hidden>Abrir na Bancada IA</a></header>
+<main id="out"><div class="state">Abrindo…</div></main>
+<script>
+const SUPABASE_URL = 'https://iqfuiabrnucvcochpggz.supabase.co';
+const ANON = 'sb_publishable_A_BoT2c34MUf0XEz91UEsw_uk9RGqIx';
+const out = document.getElementById('out');
+const state = (t) => { out.innerHTML = ''; const d = document.createElement('div'); d.className = 'state'; d.textContent = t; out.append(d); };
+const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const b64url = (s) => b64(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+
+async function main() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  const id = p.get('id'), k = p.get('k');
+  if (!id || !k) return state('Link incompleto.');
+  // Tira a chave da barra de endereço/histórico depois de ler.
+  history.replaceState(null, '', location.pathname);
+  const open = document.getElementById('open');
+  open.href = `bancada://import?id=${encodeURIComponent(id)}&k=${encodeURIComponent(k)}`;
+  open.hidden = false;
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_share`, { method: 'POST', headers: { apikey: ANON, authorization: `Bearer ${ANON}`, 'content-type': 'application/json' }, body: JSON.stringify({ p_id: id }) });
+  if (!r.ok) return state('Não foi possível buscar a sessão.');
+  const payload = await r.json();
+  if (!payload) return state('Este link expirou, foi revogado ou atingiu o limite de aberturas.');
+  const blob = b64(payload);
+  if (new TextDecoder().decode(blob.slice(0, 4)) !== 'BNC1') return state('Formato desconhecido.');
+  const key = await crypto.subtle.importKey('raw', b64url(k), 'AES-GCM', false, ['decrypt']);
+  let plain;
+  try { plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: blob.slice(4, 16) }, key, blob.slice(16)); }
+  catch { return state('Chave do link incorreta.'); }
+  const text = await new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  render(JSON.parse(text));
+}
+
+function render(bundle) {
+  const s = bundle.sessions[0];
+  document.getElementById('title').textContent = s.name || s.title || 'Sessão';
+  document.getElementById('meta').textContent = `exportada em ${new Date(bundle.exportedAt).toLocaleString('pt-BR')}`;
+  out.innerHTML = '';
+  for (const line of s.content.split('\n')) {
+    let o; try { o = JSON.parse(line); } catch { continue; }
+    if (o.type !== 'user' && o.type !== 'assistant') continue;
+    const c = o.message?.content;
+    const blocks = typeof c === 'string' ? [{ type: 'text', text: c }] : Array.isArray(c) ? c : [];
+    for (const b of blocks) {
+      if (b.type === 'text' && b.text?.trim() && !(o.type === 'user' && b.text.startsWith('<'))) {
+        const d = document.createElement('div'); d.className = 'msg';
+        const w = document.createElement('div'); w.className = 'who'; w.textContent = o.type === 'user' ? 'Usuário' : 'Claude';
+        d.append(w, document.createTextNode(b.text)); out.append(d);
+      } else if (b.type === 'tool_use') {
+        const d = document.createElement('div'); d.className = 'tool';
+        d.textContent = `↳ ${b.name} ${JSON.stringify(b.input).slice(0, 400)}`; out.append(d);
+      }
+    }
+  }
+  if (!out.children.length) state('Sessão sem mensagens de texto.');
+}
+main().catch((e) => state('Erro: ' + e.message));
+</script>
+</body>
+</html>
