@@ -1,8 +1,19 @@
-# Bancada IA — releases
+# Bancada IA — downloads
 
-Instaladores da **Bancada IA** (Windows e Linux) e a página que abre links de sessões compartilhadas.
+Versão atual: **v0.2.0** · [todas as versões](https://github.com/JosimarProjects/bancada-releases/releases)
 
-- Baixe a versão mais recente em [Releases](https://github.com/JosimarProjects/bancada-releases/releases/latest).
-- O app instalado se atualiza sozinho a partir daqui.
+| Sistema | Instalador |
+|---|---|
+| Windows 10/11 (64 bits) | [Bancada-IA-Setup-0.2.0.exe](https://github.com/JosimarProjects/bancada-releases/releases/download/v0.2.0/Bancada-IA-Setup-0.2.0.exe) |
+| Linux Debian/Ubuntu | [bancada-ia_0.2.0_amd64.deb](https://github.com/JosimarProjects/bancada-releases/releases/download/v0.2.0/bancada-ia_0.2.0_amd64.deb) |
+| Linux (qualquer distro) | [Bancada-IA-0.2.0.AppImage](https://github.com/JosimarProjects/bancada-releases/releases/download/v0.2.0/Bancada-IA-0.2.0.AppImage) |
 
-O código-fonte é privado.
+Depois de instalado, o app se atualiza sozinho a partir daqui.
+
+- **Windows:** o instalador ainda não é assinado; no aviso do SmartScreen clique em "Mais informações" → "Executar assim mesmo".
+- **Debian/Ubuntu:** `sudo apt install ./bancada-ia_0.2.0_amd64.deb`
+- **AppImage:** `chmod +x Bancada-IA-0.2.0.AppImage && ./Bancada-IA-0.2.0.AppImage`
+
+> Quem instalou a v0.1.0: ela abre em branco e não consegue se atualizar sozinha. Instale a v0.2.0 uma vez; dali em diante as atualizações chegam automaticamente.
+
+O código-fonte é privado. A pasta `s/` é a página que abre links de sessões compartilhadas.
